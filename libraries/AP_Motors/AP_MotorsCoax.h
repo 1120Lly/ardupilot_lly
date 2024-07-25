@@ -15,7 +15,8 @@
 #define AP_MOTORS_SINGLE_SPEED_DIGITAL_SERVOS 250 // update rate for digital servos
 #define AP_MOTORS_SINGLE_SPEED_ANALOG_SERVOS 125  // update rate for analog servos
 
-#define AP_MOTORS_COAX_SERVO_INPUT_RANGE    4500    // roll or pitch input of -4500 will cause servos to their minimum (i.e. radio_min), +4500 will move them to their maximum (i.e. radio_max)
+#define AP_MOTORS_COAX_SERVO_INPUT_RANGE    2000    // roll or pitch input of -4500 will cause servos to their minimum (i.e. radio_min), +4500 will move them to their maximum (i.e. radio_max)
+#define AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE    2000
 
 /// @class      AP_MotorsSingle
 class AP_MotorsCoax : public AP_MotorsMulticopter {
@@ -26,7 +27,7 @@ public:
         AP_MotorsMulticopter(speed_hz)
     {
     };
-    // 111
+
     // init
     void                init(motor_frame_class frame_class, motor_frame_type frame_type) override;
 
@@ -46,6 +47,17 @@ public:
     // Run arming checks
     bool arming_checks(size_t buflen, char *buffer) const override { return AP_Motors::arming_checks(buflen, buffer); }
 
+    void get_now_mode(float _mode_num) override { now_mode = _mode_num; }  //获得当前模式
+
+    void set_servo_out(float _movement_throttle, float _movement_roll, float _movement_yaw, float _movement_pitch, float _movement_propeller_angle) override 
+    {
+        underwater_throttle = _movement_throttle;
+        underwater_roll = _movement_roll;
+        underwater_yaw = _movement_yaw;
+        underwater_pitch = _movement_pitch;
+        movement_propeller_angle = _movement_propeller_angle;
+    }
+
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -60,4 +72,21 @@ protected:
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+
+    int now_mode;
+    float underwater_throttle;
+    float underwater_roll;
+    float underwater_yaw;
+    float underwater_pitch;
+    float movement_propeller_angle;
+
+    float underwater_throttle_up_out;
+    float underwater_throttle_down_out;
+    float underwater_yaw_out;
+    float underwater_pitch_out;
+    float underwater_roll_out;
+
+    int underwater_throttle_up_output;
+    int underwater_throttle_down_output;
+    float propeller_angle;
 };

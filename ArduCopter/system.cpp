@@ -221,6 +221,9 @@ void Copter::init_ardupilot()
 
     // flag that initialisation has completed
     ap.initialised = true;
+
+    //user define
+    underwaterControl->init(); //跨介质无人机
 }
 
 
@@ -536,6 +539,9 @@ void Copter::allocate_motors(void)
 
     // param count could have changed
     AP_Param::invalidate_count();
+
+    //user define
+    underwaterControl = new AC_UnderWaterControl(motors, ahrs_view); //跨介质无人机
 }
 
 bool Copter::is_tradheli() const

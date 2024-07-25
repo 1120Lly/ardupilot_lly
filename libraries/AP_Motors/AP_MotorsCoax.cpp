@@ -19,6 +19,10 @@
 #include <GCS_MAVLink/GCS.h>
 #include <SRV_Channel/SRV_Channel.h>
 
+#define mode_fly             2
+#define mode_transwater      1
+#define mode_underwoater     0
+
 extern const AP_HAL::HAL& hal;
 
 // init
@@ -26,7 +30,7 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 {
     // make sure 6 output channels are mapped
     for (uint8_t i = 0; i < 6; i++) {
-        add_motor_num(CH_1 + i);
+        add_motor_num(CH_1 + i);    //设置6个通道，自己改的话参考llw的双旋翼代码，不使用这个for循环
     }
 
     // set the motor_enabled flag so that the main ESC can be calibrated like other frame types
@@ -35,9 +39,21 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // setup actuator scaling
     for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), 4500);//初始化舵机，不包括旋翼
     }
+/*******************************************************************************************/
+    // //水下右电机
+    // SRV_Channels::set_aux_channel_default(SRV_Channel::U_throttleRight, CH_7);
+    // //水下左电机
+    // SRV_Channels::set_aux_channel_default(SRV_Channel::U_throttleLeft, CH_8);
+    // //水下右舵机
+    // SRV_Channels::set_aux_channel_default(SRV_Channel::U_RightJointMotor, CH_9);
+    // SRV_Channels::set_angle(SRV_Channel::U_RightJointMotor, 4500);
+    //螺旋桨总距舵机
+    SRV_Channels::set_aux_channel_default(SRV_Channel::U_PropellerAngleJoinMotor, CH_7);
+    SRV_Channels::set_angle(SRV_Channel::U_PropellerAngleJoinMotor, 4500);
 
+/*******************************************************************************************/
     _mav_type = MAV_TYPE_COAXIAL;
 
     // record successful initialisation if what we setup was the desired frame_class
@@ -64,39 +80,92 @@ void AP_MotorsCoax::set_update_rate(uint16_t speed_hz)
 
 void AP_MotorsCoax::output_to_motors()
 {
-    switch (_spool_state) {
-        case SpoolState::SHUT_DOWN:
-            // sends minimum values out to the motors
-            rc_write_angle(AP_MOTORS_MOT_1, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write_angle(AP_MOTORS_MOT_2, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write_angle(AP_MOTORS_MOT_3, -_roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write_angle(AP_MOTORS_MOT_4, -_pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            rc_write(AP_MOTORS_MOT_5, output_to_pwm(0));
-            rc_write(AP_MOTORS_MOT_6, output_to_pwm(0));
-            break;
-        case SpoolState::GROUND_IDLE:
-            // sends output to motors when armed but not flying
-            for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-                rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            }
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], actuator_spin_up_to_ground_idle());
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], actuator_spin_up_to_ground_idle());
-            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
-            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
-            break;
-        case SpoolState::SPOOLING_UP:
-        case SpoolState::THROTTLE_UNLIMITED:
-        case SpoolState::SPOOLING_DOWN:
-            // set motor output based on thrust requests
-            for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-                rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-            }
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thr_lin.thrust_to_actuator(_thrust_yt_ccw));
-            set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thr_lin.thrust_to_actuator(_thrust_yt_cw));
-            rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
-            rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
-            break;
+    if(now_mode == mode_fly)
+    {
+        ///////////启动螺旋桨，关闭水浆////////////
+        // gcs().send_text(MAV_SEVERITY_INFO,"飞行模式");
+        switch (_spool_state) {
+            case SpoolState::SHUT_DOWN:
+                // sends minimum values out to the motors
+                rc_write_angle(AP_MOTORS_MOT_1, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_2, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_3, -_roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_4, -_pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write(AP_MOTORS_MOT_5, output_to_pwm(0));
+                rc_write(AP_MOTORS_MOT_6, output_to_pwm(0));
+                SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
+                break;
+            case SpoolState::GROUND_IDLE:
+                // sends output to motors when armed but not flying
+                for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
+                    rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                }
+                set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], actuator_spin_up_to_ground_idle());
+                set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], actuator_spin_up_to_ground_idle());
+                rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
+                rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
+                SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
+                break;
+            case SpoolState::SPOOLING_UP:
+            case SpoolState::THROTTLE_UNLIMITED:
+            case SpoolState::SPOOLING_DOWN:
+                // set motor output based on thrust requests
+                for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
+                    rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                }
+                set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thr_lin.thrust_to_actuator(_thrust_yt_ccw));
+                set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thr_lin.thrust_to_actuator(_thrust_yt_cw));
+
+                // gcs().send_text(MAV_SEVERITY_INFO,"%f",_actuator[AP_MOTORS_MOT_5]);
+
+                rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
+                rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
+                SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
+                break;
+        }
+
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleLeft,output_to_pwm(0));
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleRight,output_to_pwm(0));
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_LeftJointMotor,0);
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_RightJointMotor,0);
     }
+    else if (now_mode == mode_underwoater)
+    {
+        ///////////////////////关闭螺旋桨，开启水浆////////////////////////////////
+        // gcs().send_text(MAV_SEVERITY_INFO,"水下模式");
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor5, underwater_throttle_up_output);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor6, underwater_throttle_down_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, underwater_pitch_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, underwater_yaw_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
+
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleLeft,underwater_throttle_left_output);
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleRight,underwater_throttle_right_output);
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_LeftJointMotor,(underwater_pitch_out + underwater_roll_out)*4500);
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_RightJointMotor,(underwater_pitch_out - underwater_roll_out)*4500);
+    }
+
+    else{
+        // gcs().send_text(MAV_SEVERITY_INFO,"穿越模式");
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor5, underwater_throttle_up_output);
+        SRV_Channels::set_output_pwm(SRV_Channel::k_motor6, underwater_throttle_down_output);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, underwater_pitch_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, underwater_roll_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleLeft,underwater_throttle_left_output);
+        // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleRight,underwater_throttle_right_output);
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_LeftJointMotor,(underwater_pitch_out + underwater_roll_out)*4500);
+        // SRV_Channels::set_output_scaled(SRV_Channel::U_RightJointMotor,(underwater_pitch_out - underwater_roll_out)*4500);
+        // for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
+        //     rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+        // }
+        // set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thrust_to_actuator(_thrust_yt_ccw));
+        // set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thrust_to_actuator(_thrust_yt_cw));  
+        // rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
+        // rc_write(AP_MOTORS_MOT_6, output_to_pwm(_actuator[AP_MOTORS_MOT_6]));
+        
+    }
+    
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors or servos (1 means being used)
@@ -213,6 +282,65 @@ void AP_MotorsCoax::output_armed_stabilizing()
     }
     _actuator_out[2] = -_actuator_out[0];
     _actuator_out[3] = -_actuator_out[1];
+
+/*******************************************************************************************************
+ * 水下舵机，电机输出
+*******************************************************************************************************/
+// pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
+    propeller_angle = movement_propeller_angle * 8000;
+    if(now_mode == mode_underwoater)
+    {
+        underwater_yaw_out = underwater_yaw;
+        underwater_pitch_out = underwater_pitch;
+        underwater_throttle_up_out = underwater_throttle + 0.5 * underwater_roll;
+        underwater_throttle_down_out = underwater_throttle - 0.5 * underwater_roll;
+        if(underwater_throttle_up_out >= 0.9)
+        {
+            underwater_throttle_up_out = 0.9;
+        }
+        if(underwater_throttle_up_out < 0)
+        {
+            underwater_throttle_up_out = 0;
+        }
+        if(underwater_throttle_down_out >= 0.9)
+        {
+            underwater_throttle_down_out = 0.9;
+        }
+        if(underwater_throttle_down_out < 0)
+        {
+            underwater_throttle_down_out = 0;
+        }
+        underwater_throttle_up_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_up_out;
+        underwater_throttle_down_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_down_out;
+    }
+    else if (now_mode == mode_transwater)
+    {
+        underwater_roll_out = underwater_roll;
+        underwater_pitch_out = underwater_pitch;
+        underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_yaw;
+        underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_yaw;
+        if(underwater_throttle_up_out >= 0.9)
+        {
+            underwater_throttle_up_out = 0.9;
+        }
+        if(underwater_throttle_up_out < 0)
+        {
+            underwater_throttle_up_out = 0;
+        }
+        if(underwater_throttle_down_out >= 0.9)
+        {
+            underwater_throttle_down_out = 0.9;
+        }
+        if(underwater_throttle_down_out < 0)
+        {
+            underwater_throttle_down_out = 0;
+        }
+        underwater_throttle_up_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_up_out;
+        underwater_throttle_down_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_down_out;
+    }
+    
+
+
 }
 
 // output_test_seq - spin a motor at the pwm value specified

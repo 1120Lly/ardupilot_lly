@@ -72,6 +72,7 @@
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Winch/AP_Winch_config.h>
+#include <AC_UnderWaterControl/AC_UnderWaterControl.h>   //跨介质无人机
 
 // Configuration
 #include "defines.h"
@@ -598,6 +599,9 @@ private:
     int16_t hover_roll_trim_scalar_slew;
 #endif
 
+//user define
+    AC_UnderWaterControl *underwaterControl; //跨介质无人机
+
     // ground effect detector
     struct {
         bool takeoff_expected;
@@ -975,6 +979,8 @@ private:
     void userhook_auxSwitch1(const RC_Channel::AuxSwitchPos ch_flag);
     void userhook_auxSwitch2(const RC_Channel::AuxSwitchPos ch_flag);
     void userhook_auxSwitch3(const RC_Channel::AuxSwitchPos ch_flag);
+    //user define
+    void update_UnderwaterControl();//跨介质无人机
 
 #if MODE_ACRO_ENABLED == ENABLED
 #if FRAME_CONFIG == HELI_FRAME

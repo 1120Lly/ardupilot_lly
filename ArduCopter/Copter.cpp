@@ -266,6 +266,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if STATS_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Stats,             &copter.g2.stats,            update,           1, 100, 171),
 #endif
+
+//user define
+    SCHED_TASK(update_UnderwaterControl,      200,    50,  172), //跨介质无人机
 };
 
 void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
@@ -813,6 +816,12 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
         rate_ef_targets = attitude_control->get_rate_ef_targets();
     }
     return true;
+}
+
+//user define 跨介质双旋翼
+void Copter::update_UnderwaterControl()
+{
+    underwaterControl->update();
 }
 
 /*
