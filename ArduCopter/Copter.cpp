@@ -821,7 +821,8 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
 //user define 跨介质双旋翼
 void Copter::update_UnderwaterControl()
 {
-    underwaterControl->update();
+    float U_T_ratio = g2.U_T_ratio;
+    underwaterControl->update(U_T_ratio);
 }
 
 /*

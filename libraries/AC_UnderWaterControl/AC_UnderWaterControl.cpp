@@ -37,7 +37,7 @@ void AC_UnderWaterControl::init()
 
 
 
-void AC_UnderWaterControl::update(void)
+void AC_UnderWaterControl::update(float U_T_ratio)
 {
     if (_motors == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "_motors = nullptr");
@@ -48,6 +48,8 @@ void AC_UnderWaterControl::update(void)
         gcs().send_text(MAV_SEVERITY_WARNING, "_ahrs = nullptr");
         return;
     }
+
+    U_T_Ratio = U_T_ratio;
 
     int pwm_read = hal.rcin->read(CH_6);
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -96,8 +98,8 @@ void AC_UnderWaterControl::pilot_control()
 {
     int16_t pwm_throttle = hal.rcin->read(CH_3);
     int16_t pwm_roll = hal.rcin->read(CH_1) - 1500;
-    int16_t pwm_yaw = hal.rcin->read(CH_4) - 1500;
-    int16_t pwm_pitch = hal.rcin->read(CH_2) - 1500;
+    int16_t pwm_yaw = hal.rcin->read(CH_2) - 1500;
+    int16_t pwm_pitch = hal.rcin->read(CH_4) - 1500;
     int16_t pwm_propeller_angle = hal.rcin->read(CH_5); // 推杆舵机当油门大于1600时，向上推动，当油门小于1400时，向下推动
     
     if (pwm_throttle < 1150 && pwm_throttle > 1050) {
@@ -150,7 +152,7 @@ void AC_UnderWaterControl::get_mode()
     函数：set_servo_out（）
     输入量：无
     作用：将遥控器的输入量线性映射到[0,1]，然后发送给AP_MotorsCoax.h
-    movement_throttle:遥控器油门大于1200时，将油门[1200,1900]映射到[0,0.5]
+    movement_throttle:遥控器油门大于1200时，将油门[1200,1900]映射到[0,0.1]×U_T_Ratio，默认80
     movemeng_roll: 将遥控器输入的[1100,1900]映射到[-0.5,0.5]
     movement_yaw: 将遥控器输入的[1100,1900]映射到[-0.5,0.5],遥控器输入值增大，右转，左电机增大输出，右电机减少输出
     movement_pitch: 将遥控器输入的[1100,1900]映射到[-0.5,0.5]
@@ -167,7 +169,7 @@ void AC_UnderWaterControl::set_servo_out()
 
     if(_movement_throttle >= 1200)
     {
-        movement_throttle = float((_movement_throttle - 1200))/1400.0f;
+        movement_throttle = float((((_movement_throttle - 1200))/70000.0f) * U_T_Ratio);
     }
     else{
         movement_throttle = 0.0f;

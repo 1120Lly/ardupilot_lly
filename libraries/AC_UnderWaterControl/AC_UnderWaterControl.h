@@ -32,7 +32,7 @@ public:
 
     void get_mode();
 
-    void update(void);
+    void update(float U_T_ratio);
 
     void set_servo_out();
 
@@ -72,4 +72,6 @@ protected:
     bool set_underwater_stop;   //true是停下
 
     enum UnderWaterMode UnderWaterMode;
+
+    float U_T_Ratio;
 };

@@ -22,6 +22,7 @@
 #define mode_fly             2
 #define mode_transwater      1
 #define mode_underwoater     0
+#define rate_for_joinmotor   0.7
 
 extern const AP_HAL::HAL& hal;
 
@@ -39,7 +40,7 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
 
     // setup actuator scaling
     for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), 4500);//初始化舵机，不包括旋翼
+        SRV_Channels::set_angle(SRV_Channels::get_motor_function(i), AP_MOTORS_COAX_SERVO_INPUT_RANGE);//初始化舵机，不包括旋翼
     }
 /*******************************************************************************************/
     // //水下右电机
@@ -87,10 +88,10 @@ void AP_MotorsCoax::output_to_motors()
         switch (_spool_state) {
             case SpoolState::SHUT_DOWN:
                 // sends minimum values out to the motors
-                rc_write_angle(AP_MOTORS_MOT_1, _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-                rc_write_angle(AP_MOTORS_MOT_2, _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-                rc_write_angle(AP_MOTORS_MOT_3, -_roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
-                rc_write_angle(AP_MOTORS_MOT_4, -_pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_1, rate_for_joinmotor * _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_2, rate_for_joinmotor * _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_3, -rate_for_joinmotor * _roll_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                rc_write_angle(AP_MOTORS_MOT_4, -rate_for_joinmotor * _pitch_radio_passthrough * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
                 rc_write(AP_MOTORS_MOT_5, output_to_pwm(0));
                 rc_write(AP_MOTORS_MOT_6, output_to_pwm(0));
                 SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
@@ -98,8 +99,10 @@ void AP_MotorsCoax::output_to_motors()
             case SpoolState::GROUND_IDLE:
                 // sends output to motors when armed but not flying
                 for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-                    rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                    // rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                    rc_write_angle(AP_MOTORS_MOT_1 + i,  rate_for_joinmotor * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
                 }
+                // SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, 0); //关闭滚转回路
                 set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], actuator_spin_up_to_ground_idle());
                 set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], actuator_spin_up_to_ground_idle());
                 rc_write(AP_MOTORS_MOT_5, output_to_pwm(_actuator[AP_MOTORS_MOT_5]));
@@ -111,8 +114,10 @@ void AP_MotorsCoax::output_to_motors()
             case SpoolState::SPOOLING_DOWN:
                 // set motor output based on thrust requests
                 for (uint8_t i = 0; i < NUM_ACTUATORS; i++) {
-                    rc_write_angle(AP_MOTORS_MOT_1 + i, _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                    // rc_write_angle(AP_MOTORS_MOT_1 + i, _spin_up_ratio * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+                    rc_write_angle(AP_MOTORS_MOT_1 + i, rate_for_joinmotor * _actuator_out[i] * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
                 }
+                // SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, 0); //关闭滚转回路
                 set_actuator_with_slew(_actuator[AP_MOTORS_MOT_5], thr_lin.thrust_to_actuator(_thrust_yt_ccw));
                 set_actuator_with_slew(_actuator[AP_MOTORS_MOT_6], thr_lin.thrust_to_actuator(_thrust_yt_cw));
 
@@ -292,8 +297,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
     {
         underwater_yaw_out = underwater_yaw;
         underwater_pitch_out = underwater_pitch;
-        underwater_throttle_up_out = underwater_throttle + 0.5 * underwater_roll;
-        underwater_throttle_down_out = underwater_throttle - 0.5 * underwater_roll;
+        underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_roll;
+        underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_roll;
         if(underwater_throttle_up_out >= 0.9)
         {
             underwater_throttle_up_out = 0.9;
@@ -315,10 +320,10 @@ void AP_MotorsCoax::output_armed_stabilizing()
     }
     else if (now_mode == mode_transwater)
     {
-        underwater_roll_out = underwater_roll;
-        underwater_pitch_out = underwater_pitch;
-        underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_yaw;
-        underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_yaw;
+        underwater_roll_out = underwater_yaw;
+        underwater_pitch_out = underwater_roll;
+        underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_pitch;
+        underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_pitch;
         if(underwater_throttle_up_out >= 0.9)
         {
             underwater_throttle_up_out = 0.9;

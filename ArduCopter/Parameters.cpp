@@ -1173,11 +1173,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // ID 60 is reserved for the SHIP_OPS
 
+    // AP_GROUPINFO("Unerwater_T_ratio", 61, ParametersG2, U_T_ratio, 80.0),  //跨介质无人机
+
     // extend to a new group
     AP_SUBGROUPEXTENSION("", 61, ParametersG2, var_info2),
 
     // ID 62 is reserved for the SHOW_... parameters from the Skybrush fork at
     // https://github.com/skybrush-io/ardupilot
+
+    // AP_GROUPINFO("Unerwater_T_ratio", 63, ParametersG2, U_T_ratio, 80.0),  //跨介质无人机
 
     AP_GROUPEND
 };
@@ -1250,6 +1254,9 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
+
+    //user define
+    AP_GROUPINFO("U_T_ratio",9, ParametersG2, U_T_ratio, 80.0),  //跨介质无人机
 
     AP_GROUPEND
 };
