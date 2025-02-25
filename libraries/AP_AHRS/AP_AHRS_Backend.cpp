@@ -68,7 +68,7 @@ void AP_AHRS::add_trim(float roll_in_radians, float pitch_in_radians, bool save_
 }
 
 // Set the board mounting orientation from AHRS_ORIENTATION parameter
-void AP_AHRS::update_orientation()
+void AP_AHRS::update_orientation(int board_orientation)
 {
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_orientation_update_ms < 1000) {
@@ -84,7 +84,12 @@ void AP_AHRS::update_orientation()
 
     last_orientation_update_ms = now_ms;
 
-    const enum Rotation orientation = (enum Rotation)_board_orientation.get();
+    enum Rotation orientation = (enum Rotation)_board_orientation.get();//设置飞控板方向
+
+    if(board_orientation == 25)
+    {
+        orientation = (enum Rotation)board_orientation;
+    }
 
     AP::ins().set_board_orientation(orientation);
     AP::compass().set_board_orientation(orientation);

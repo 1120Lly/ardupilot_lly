@@ -360,13 +360,13 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = _get_velocity_NED(state.velocity_NED);
 }
 
-void AP_AHRS::update(bool skip_ins_update)
+void AP_AHRS::update(bool skip_ins_update, int board_orientation)
 {
     // periodically checks to see if we should update the AHRS
     // orientation (e.g. based on the AHRS_ORIENTATION parameter)
     // allow for runtime change of orientation
     // this makes initial config easier
-    update_orientation();
+    update_orientation(board_orientation);//飞控板方向的第二层调用
 
     if (!skip_ins_update) {
         // tell the IMU to grab some data

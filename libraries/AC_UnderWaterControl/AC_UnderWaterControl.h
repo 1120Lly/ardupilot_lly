@@ -49,6 +49,10 @@ public:
         fly                    = 2,
     };
 
+    int pwm_read;
+
+    enum UnderWaterMode UnderWaterMode;
+
     // bool Pick_Up(float Acceleration, float Angle, int16_t encoder_left, int16_t encoder_right);
     // bool Put_Down(float Angle, int encoder_left, int encoder_right);
     // void debug_info();
@@ -71,7 +75,6 @@ protected:
     bool mode_fly;
     bool set_underwater_stop;   //true是停下
 
-    enum UnderWaterMode UnderWaterMode;
 
     float U_T_Ratio;
 };

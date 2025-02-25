@@ -759,8 +759,19 @@ void Copter::update_super_simple_bearing(bool force_update)
 
 void Copter::read_AHRS(void)
 {
+    int underwater = 0;
+    int board_orientation;
+    int flymode = underwaterControl->UnderWaterMode;
+    if(flymode == underwater)
+    {
+        board_orientation = 25;
+    }
+    else
+    {
+        board_orientation = 0;
+    }
     // we tell AHRS to skip INS update as we have already done it in FAST_TASK.
-    ahrs.update(true);
+    ahrs.update(true, board_orientation);//飞控板方向的第一层调用 25为pitch 270
 }
 
 // read baro and log control tuning

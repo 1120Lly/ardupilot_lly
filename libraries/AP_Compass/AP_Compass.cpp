@@ -844,7 +844,7 @@ void Compass::init()
 
 #ifndef HAL_BUILD_AP_PERIPH
     // updating the AHRS orientation updates our own orientation:
-    AP::ahrs().update_orientation();
+    AP::ahrs().update_orientation(0); //飞控板初始化方向
 #endif
 
     init_done = true;

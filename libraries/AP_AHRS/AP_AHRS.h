@@ -69,7 +69,7 @@ public:
     // orientation (e.g. based on the AHRS_ORIENTATION parameter)
     // allow for runtime change of orientation
     // this makes initial config easier
-    void update_orientation();
+    void update_orientation(int board_orientation);
 
     // allow threads to lock against AHRS update
     HAL_Semaphore &get_semaphore(void) {
@@ -86,7 +86,7 @@ public:
     //  should be called if gyro offsets are recalculated
     void reset_gyro_drift();
 
-    void            update(bool skip_ins_update=false);
+    void            update(bool skip_ins_update=false, int board_orientation = 0);
     void            reset();
 
     // get current location estimate
