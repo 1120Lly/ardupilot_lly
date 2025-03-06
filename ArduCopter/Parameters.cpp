@@ -730,6 +730,8 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
+    // GOBJECTPTR(underwaterControl, "UDWT_", AC_UnderWaterControl),  //跨介质水下PID参数
+
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp
     PARAM_VEHICLE_INFO,
@@ -1257,6 +1259,8 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     //user define
     AP_GROUPINFO("U_T_ratio",9, ParametersG2, U_T_ratio, 80.0),  //跨介质无人机
+
+    AP_GROUPINFO("U_JM_k",10, ParametersG2, U_JM_k, 1),
 
     AP_GROUPEND
 };

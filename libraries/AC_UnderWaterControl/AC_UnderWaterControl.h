@@ -18,6 +18,10 @@
 #define telecontorl_low_position_min    1000
 #define telecontorl_low_position_max    1200
 
+#define AC_underwater_ROLL_P            0.3f
+#define AC_underwater_ROLL_I            0.0f
+#define AC_underwater_ROLL_D            0.1f
+
 
 class AC_UnderWaterControl {
 public:
@@ -32,9 +36,12 @@ public:
 
     void get_mode();
 
-    void update(float U_T_ratio);
+    void update(float U_T_ratio, float U_JM_K);
 
     void set_servo_out();
+
+    void propeller_servo_motor_plus();
+    void propeller_servo_motor_cut();
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -52,6 +59,9 @@ public:
     int pwm_read;
 
     enum UnderWaterMode UnderWaterMode;
+
+    // static const struct AP_Param::GroupInfo var_info[];
+    
 
     // bool Pick_Up(float Acceleration, float Angle, int16_t encoder_left, int16_t encoder_right);
     // bool Put_Down(float Angle, int encoder_left, int encoder_right);
@@ -77,4 +87,17 @@ protected:
 
 
     float U_T_Ratio;
+
+    float U_JM_k;
+
+    int pwm_propeller_angle_now;
+
+    //////////////////////////////////////////
+    //PID参数 
+    AC_PID _pid_roll;
+
+    /////////////////////////////////////////////
+    //水下滚转环参数
+    float turn_target;
+    float turn_out;
 };

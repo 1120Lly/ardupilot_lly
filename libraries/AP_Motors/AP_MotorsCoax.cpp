@@ -52,7 +52,7 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     // SRV_Channels::set_angle(SRV_Channel::U_RightJointMotor, 4500);
     //螺旋桨总距舵机
     SRV_Channels::set_aux_channel_default(SRV_Channel::U_PropellerAngleJoinMotor, CH_7);
-    SRV_Channels::set_angle(SRV_Channel::U_PropellerAngleJoinMotor, 4500);
+    SRV_Channels::set_angle(SRV_Channel::U_PropellerAngleJoinMotor, 0);
 
 /*******************************************************************************************/
     _mav_type = MAV_TYPE_COAXIAL;
@@ -292,7 +292,8 @@ void AP_MotorsCoax::output_armed_stabilizing()
  * 水下舵机，电机输出
 *******************************************************************************************************/
 // pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
-    propeller_angle = movement_propeller_angle * 8000;
+    propeller_angle = movement_propeller_angle * 4500;
+    gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%f", propeller_angle);
     if(now_mode == mode_underwoater)
     {
         underwater_yaw_out = underwater_yaw;

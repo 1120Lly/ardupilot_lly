@@ -383,8 +383,13 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
+
+        // k_param_underwaterControl = 258, //跨介质水下PID参数
+
+
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -705,6 +710,7 @@ public:
 
     //user define
     AP_Float U_T_ratio; //跨介质无人机
+    AP_Float U_JM_k;
 };
 
 extern const AP_Param::Info        var_info[];

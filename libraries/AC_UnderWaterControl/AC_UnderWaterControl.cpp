@@ -9,15 +9,26 @@
 
 extern const AP_HAL::HAL& hal;
 
+//设置MP中可调参数
+// const AP_Param::GroupInfo AC_UnderWaterControl::var_info[]={
+//     AP_SUBGROUPINFO(_pid_roll, "ROL_", 1, AC_UnderWaterControl, AC_PID),
+
+//     AP_GROUPEND
+// };
+
 AC_UnderWaterControl::AC_UnderWaterControl(AP_Motors* motors , AP_AHRS_View* ahrs)
+    :_pid_roll(AC_underwater_ROLL_P, 0, AC_underwater_ROLL_D, 0, 0, 0, 0, 0)
 {
+    // AP_Param::setup_object_defaults(this, var_info);
     speed_low_pass_filter.set_cutoff_frequency(50.0f);
     speed_low_pass_filter.reset(0);
     _movement_throttle = 0;
     _movement_roll = 0;
     _movement_yaw = 0;
     _movement_pitch = 0;
-    _movement_propeller_angle = 1500;
+    _movement_propeller_angle = 1000;
+    pwm_propeller_angle_now = 1000;
+    U_JM_k = 0;
     mode_fly = false;
     mode_transwater = false;
     mode_underwater = false;
@@ -35,9 +46,26 @@ void AC_UnderWaterControl::init()
     UnderWaterMode = UnderWaterMode::fly;
 }
 
+/**************************************************************************
+函数功能：控制倾转螺旋桨舵机转速,控制量由遥控器输入，范围为1000-2000 ，函数作用
+         是假设遥控器输入从1000变为了2000，那么返回值随着时间变化从1000到2000
+入口参数：
+返回  值：舵机转动角度_pwm_propeller_angle
+**************************************************************************/
+void AC_UnderWaterControl::propeller_servo_motor_plus()
+{
+    pwm_propeller_angle_now += U_JM_k;
+    // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
+}
+
+void AC_UnderWaterControl::propeller_servo_motor_cut()
+{
+    pwm_propeller_angle_now -= U_JM_k;
+    // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
+}
 
 
-void AC_UnderWaterControl::update(float U_T_ratio)
+void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
 {
     if (_motors == nullptr) {
         gcs().send_text(MAV_SEVERITY_WARNING, "_motors = nullptr");
@@ -50,6 +78,8 @@ void AC_UnderWaterControl::update(float U_T_ratio)
     }
 
     U_T_Ratio = U_T_ratio;
+
+    U_JM_k = U_JM_K;  //倾转螺旋桨舵机随时间变化的斜率
 
     pwm_read = hal.rcin->read(CH_6);
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -86,9 +116,18 @@ void AC_UnderWaterControl::update(float U_T_ratio)
     // 遥控输入
     pilot_control();
 
+    //返回倾转螺旋桨舵机转角值pwm_propeller_angle_now
+    if(pwm_propeller_angle_now < _movement_propeller_angle)
+    {
+        propeller_servo_motor_plus();
+    }
+    else if(pwm_propeller_angle_now > _movement_propeller_angle)
+    {
+        propeller_servo_motor_cut();
+    }
+    
     //发送遥控输出
     set_servo_out();
-
 
 }
 
@@ -101,7 +140,7 @@ void AC_UnderWaterControl::pilot_control()
     int16_t pwm_yaw = hal.rcin->read(CH_2) - 1500;
     int16_t pwm_pitch = hal.rcin->read(CH_4) - 1500;
     int16_t pwm_propeller_angle = hal.rcin->read(CH_5); // 推杆舵机当油门大于1600时，向上推动，当油门小于1400时，向下推动
-    
+
     if (pwm_throttle < 1150 && pwm_throttle > 1050) {
         _movement_throttle = 0;
     } else if (pwm_throttle < 1050 || pwm_throttle > 1950) {
@@ -165,7 +204,7 @@ void AC_UnderWaterControl::set_servo_out()
     float movement_roll = float(_movement_roll)/1000.0f;
     float movement_yaw;
     float movement_pitch = float(_movement_pitch)/1000.0f;
-    float movement_propeller_angle = float(_movement_propeller_angle - 1500)/1000.0f;
+    float movement_propeller_angle = float(pwm_propeller_angle_now - 1500)/1000.0f;
 
     if(_movement_throttle >= 1200)
     {
