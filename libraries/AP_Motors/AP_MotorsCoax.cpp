@@ -52,7 +52,7 @@ void AP_MotorsCoax::init(motor_frame_class frame_class, motor_frame_type frame_t
     // SRV_Channels::set_angle(SRV_Channel::U_RightJointMotor, 4500);
     //螺旋桨总距舵机
     SRV_Channels::set_aux_channel_default(SRV_Channel::U_PropellerAngleJoinMotor, CH_7);
-    SRV_Channels::set_angle(SRV_Channel::U_PropellerAngleJoinMotor, 0);
+    SRV_Channels::set_angle(SRV_Channel::U_PropellerAngleJoinMotor, 4500);
 
 /*******************************************************************************************/
     _mav_type = MAV_TYPE_COAXIAL;

@@ -26,6 +26,8 @@ public:
     AP_MotorsCoax(uint16_t speed_hz = AP_MOTORS_SPEED_DEFAULT) :
         AP_MotorsMulticopter(speed_hz)
     {
+        propeller_angle = -1912;
+        movement_propeller_angle = -0.425;
     };
 
     // init
