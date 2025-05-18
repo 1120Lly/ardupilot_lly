@@ -542,6 +542,7 @@ void Copter::allocate_motors(void)
 
     //user define
     underwaterControl = new AC_UnderWaterControl(motors, ahrs_view); //跨介质无人机
+    AP_Param::load_object_from_eeprom(underwaterControl, underwaterControl->var_info);
 }
 
 bool Copter::is_tradheli() const

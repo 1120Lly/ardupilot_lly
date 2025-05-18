@@ -10,16 +10,16 @@
 extern const AP_HAL::HAL& hal;
 
 //设置MP中可调参数
-// const AP_Param::GroupInfo AC_UnderWaterControl::var_info[]={
-//     AP_SUBGROUPINFO(_pid_roll, "ROL_", 1, AC_UnderWaterControl, AC_PID),
+const AP_Param::GroupInfo AC_UnderWaterControl::var_info[]={
+    AP_SUBGROUPINFO(_pid_roll, "ROL_", 1, AC_UnderWaterControl, AC_PID),
 
-//     AP_GROUPEND
-// };
+    AP_GROUPEND
+};
 
 AC_UnderWaterControl::AC_UnderWaterControl(AP_Motors* motors , AP_AHRS_View* ahrs)
     :_pid_roll(AC_underwater_ROLL_P, 0, AC_underwater_ROLL_D, 0, 0, 0, 0, 0)
 {
-    // AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);
     speed_low_pass_filter.set_cutoff_frequency(50.0f);
     speed_low_pass_filter.reset(0);
     _movement_throttle = 0;
@@ -62,6 +62,18 @@ void AC_UnderWaterControl::propeller_servo_motor_cut()
 {
     pwm_propeller_angle_now -= U_JM_k;
     // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
+}
+
+/************************************************************************************************
+ * 函数：水下滚转控制
+ * 入口参数：滚转目标角速度、陀螺仪z轴角速度
+ * 返回值：转向控制pwm(-500~500)
+ * **********************************************************************************************/
+float AC_UnderWaterControl::Roll_control(float roll, float gyro_z)
+{
+    float roll_out = (float)roll * _pid_roll.kP() - gyro_z * _pid_roll.kD();
+
+    return roll_out;
 }
 
 
@@ -110,11 +122,16 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
         // gcs().send_text(MAV_SEVERITY_INFO,"水下模式");
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////
+    //获得陀螺仪参数
+    float gyro_z = _ahrs->get_gyro_latest()[2];
+
     //获得当前模式
     get_mode();
 
     // 遥控输入
     pilot_control();
+
+    _movement_roll_out = Roll_control(_movement_roll, gyro_z);
 
     //返回倾转螺旋桨舵机转角值pwm_propeller_angle_now
     if(pwm_propeller_angle_now < _movement_propeller_angle)
@@ -193,7 +210,7 @@ void AC_UnderWaterControl::get_mode()
     作用：将遥控器的输入量线性映射到[0,1]，然后发送给AP_MotorsCoax.h
     movement_throttle:遥控器油门大于1200时，将油门[1200,1900]映射到[0,0.1]×U_T_Ratio，默认80
     movemeng_roll: 将遥控器输入的[1100,1900]映射到[-0.5,0.5]
-    movement_yaw: 将遥控器输入的[1100,1900]映射到[-0.5,0.5],遥控器输入值增大，右转，左电机增大输出，右电机减少输出
+    movement_yaw: 将遥控器输入的[1100,1900]映射到[-0.5,0.5],遥控器输入值增大，右转
     movement_pitch: 将遥控器输入的[1100,1900]映射到[-0.5,0.5]
     movement_push_pull: 将遥控器输入的[1100,1900]映射到[-0.5,0.5],推杆舵机当油门大于1600时，向上推动，当油门小于1400时，向下推动
 *************************************************************************************************************/
@@ -201,7 +218,7 @@ void AC_UnderWaterControl::get_mode()
 void AC_UnderWaterControl::set_servo_out()
 {
     float movement_throttle;
-    float movement_roll = float(_movement_roll)/1000.0f;
+    float movement_roll = float(_movement_roll_out)/1000.0f;
     float movement_yaw;
     float movement_pitch = float(_movement_pitch)/1000.0f;
     float movement_propeller_angle = float(pwm_propeller_angle_now - 1500)/1000.0f;

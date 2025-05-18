@@ -384,10 +384,12 @@ public:
 
         k_param_vehicle = 257, // vehicle common block of parameters
 
+        k_param_underwaterControl = 258, //跨介质水下PID参数
+
         k_param_throw_altitude_min,
         k_param_throw_altitude_max,
 
-        // k_param_underwaterControl = 258, //跨介质水下PID参数
+        
 
 
 

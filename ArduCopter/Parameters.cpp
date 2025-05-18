@@ -730,7 +730,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Path: Parameters.cpp
     GOBJECT(g2, "",  ParametersG2),
 
-    // GOBJECTPTR(underwaterControl, "UDWT_", AC_UnderWaterControl),  //跨介质水下PID参数
+    GOBJECTPTR(underwaterControl, "U_", AC_UnderWaterControl),  //跨介质水下PID参数
 
     // @Group:
     // @Path: ../libraries/AP_Vehicle/AP_Vehicle.cpp

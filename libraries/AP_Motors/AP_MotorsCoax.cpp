@@ -293,7 +293,7 @@ void AP_MotorsCoax::output_armed_stabilizing()
 *******************************************************************************************************/
 // pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
     propeller_angle = movement_propeller_angle * 4500;
-    gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%f", propeller_angle);
+    // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%f", propeller_angle);
     if(now_mode == mode_underwoater)
     {
         underwater_yaw_out = underwater_yaw;

@@ -42,6 +42,7 @@ public:
 
     void propeller_servo_motor_plus();
     void propeller_servo_motor_cut();
+    float Roll_control(float roll, float gyro_z);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -59,8 +60,6 @@ public:
     int pwm_read;
 
     enum UnderWaterMode UnderWaterMode;
-
-    // static const struct AP_Param::GroupInfo var_info[];
     
 
     // bool Pick_Up(float Acceleration, float Angle, int16_t encoder_left, int16_t encoder_right);
@@ -79,6 +78,7 @@ protected:
     int16_t _movement_yaw;
     int16_t _movement_pitch;
     int16_t _movement_propeller_angle;
+    float _movement_roll_out; //PD控制器输出值
 
     bool mode_underwater;
     bool mode_transwater;
