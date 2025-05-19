@@ -154,8 +154,8 @@ void AP_MotorsCoax::output_to_motors()
         // gcs().send_text(MAV_SEVERITY_INFO,"穿越模式");
         SRV_Channels::set_output_pwm(SRV_Channel::k_motor5, underwater_throttle_up_output);
         SRV_Channels::set_output_pwm(SRV_Channel::k_motor6, underwater_throttle_down_output);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, underwater_pitch_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, underwater_roll_out * AP_MOTORS_COAX_underwater_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor1, underwater_pitch_out * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_motor2, underwater_roll_out * AP_MOTORS_COAX_SERVO_INPUT_RANGE);
         SRV_Channels::set_output_scaled(SRV_Channel::U_PropellerAngleJoinMotor, propeller_angle);
         // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleLeft,underwater_throttle_left_output);
         // SRV_Channels::set_output_pwm(SRV_Channel::U_throttleRight,underwater_throttle_right_output);
@@ -321,28 +321,33 @@ void AP_MotorsCoax::output_armed_stabilizing()
     }
     else if (now_mode == mode_transwater)
     {
-        underwater_roll_out = underwater_yaw;
-        underwater_pitch_out = underwater_roll;
-        underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_pitch;
-        underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_pitch;
-        if(underwater_throttle_up_out >= 0.9)
-        {
-            underwater_throttle_up_out = 0.9;
-        }
-        if(underwater_throttle_up_out < 0)
-        {
-            underwater_throttle_up_out = 0;
-        }
-        if(underwater_throttle_down_out >= 0.9)
-        {
-            underwater_throttle_down_out = 0.9;
-        }
-        if(underwater_throttle_down_out < 0)
-        {
-            underwater_throttle_down_out = 0;
-        }
-        underwater_throttle_up_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_up_out;
-        underwater_throttle_down_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_down_out;
+        // underwater_roll_out = underwater_yaw;
+        // underwater_pitch_out = underwater_roll;
+        // underwater_throttle_up_out = underwater_throttle - 0.5 * underwater_pitch;
+        // underwater_throttle_down_out = underwater_throttle + 0.5 * underwater_pitch;
+        // if(underwater_throttle_up_out >= 0.9)
+        // {
+        //     underwater_throttle_up_out = 0.9;
+        // }
+        // if(underwater_throttle_up_out < 0)
+        // {
+        //     underwater_throttle_up_out = 0;
+        // }
+        // if(underwater_throttle_down_out >= 0.9)
+        // {
+        //     underwater_throttle_down_out = 0.9;
+        // }
+        // if(underwater_throttle_down_out < 0)
+        // {
+        //     underwater_throttle_down_out = 0;
+        // }
+        // underwater_throttle_up_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_up_out;
+        // underwater_throttle_down_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_down_out;
+        underwater_roll_out = _actuator_out[1];
+        underwater_pitch_out = _actuator_out[0];
+        underwater_throttle_up_output = _thrust_yt_ccw;
+        underwater_throttle_down_output = _thrust_yt_cw;
+
     }
     
 
