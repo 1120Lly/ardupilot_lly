@@ -81,9 +81,8 @@ void AP_MotorsCoax::set_update_rate(uint16_t speed_hz)
 
 void AP_MotorsCoax::output_to_motors()
 {
-    if(now_mode == mode_fly)
+    if(now_mode == mode_fly || now_mode == mode_transwater)
     {
-        ///////////启动螺旋桨，关闭水浆////////////
         // gcs().send_text(MAV_SEVERITY_INFO,"飞行模式");
         switch (_spool_state) {
             case SpoolState::SHUT_DOWN:
@@ -343,10 +342,12 @@ void AP_MotorsCoax::output_armed_stabilizing()
         // }
         // underwater_throttle_up_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_up_out;
         // underwater_throttle_down_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * underwater_throttle_down_out;
-        underwater_roll_out = _actuator_out[1];
-        underwater_pitch_out = _actuator_out[0];
-        underwater_throttle_up_output = _thrust_yt_ccw;
-        underwater_throttle_down_output = _thrust_yt_cw;
+        // underwater_roll_out = _actuator_out[1];
+        // underwater_pitch_out = _actuator_out[0];
+        // underwater_throttle_up_output = _thrust_yt_ccw;
+        // underwater_throttle_down_output = _thrust_yt_cw;
+        _actuator_out[0] = _actuator_out[0] * Trans_servo_k;
+        _actuator_out[1] = _actuator_out[1] * Trans_servo_k;
 
     }
     

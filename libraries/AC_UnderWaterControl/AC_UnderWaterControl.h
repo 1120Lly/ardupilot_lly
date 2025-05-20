@@ -35,6 +35,7 @@ public:
     void pilot_control();
 
     void get_mode();
+    void get_K();
 
     void update(float U_T_ratio, float U_JM_K);
 
@@ -91,6 +92,8 @@ protected:
     float U_JM_k;
 
     int pwm_propeller_angle_now;
+
+    AP_Float transwater_servo_out_K; //跨介质时舵机放大比例
 
     //////////////////////////////////////////
     //PID参数 

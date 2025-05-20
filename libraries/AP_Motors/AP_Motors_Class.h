@@ -149,6 +149,7 @@ public:
 
 /************************************User define**********************************************************/
     virtual void        get_now_mode(float _mode_num) { }
+    virtual void        get_K(float _k) { } //跨介质舵机放大因子
     virtual void        set_servo_out(float _movement_throttle, float _movement_roll, float _movement_yaw, float _movement_pitch, float _movement_propeller_angle) { } //跨介质双旋翼
 
 /**********************************************************************************************/

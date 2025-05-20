@@ -13,6 +13,8 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AC_UnderWaterControl::var_info[]={
     AP_SUBGROUPINFO(_pid_roll, "ROL_", 1, AC_UnderWaterControl, AC_PID),
 
+    AP_GROUPINFO("SVO_K", 2, AC_UnderWaterControl, transwater_servo_out_K, 1),
+
     AP_GROUPEND
 };
 
@@ -142,6 +144,9 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     {
         propeller_servo_motor_cut();
     }
+
+    //发送跨介质舵机放大因子
+    get_K();
     
     //发送遥控输出
     set_servo_out();
@@ -202,6 +207,11 @@ void AC_UnderWaterControl::pilot_control()
 void AC_UnderWaterControl::get_mode()
 {
     _motors->get_now_mode(UnderWaterMode);
+}
+
+void AC_UnderWaterControl::get_K()
+{
+    _motors->get_K(transwater_servo_out_K);
 }
 
 /***********************************************************************************************************

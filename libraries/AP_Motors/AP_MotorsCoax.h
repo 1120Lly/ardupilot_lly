@@ -50,6 +50,7 @@ public:
     bool arming_checks(size_t buflen, char *buffer) const override { return AP_Motors::arming_checks(buflen, buffer); }
 
     void get_now_mode(float _mode_num) override { now_mode = _mode_num; }  //获得当前模式
+    void get_K(float _k) override { Trans_servo_k = _k; } //获得跨介质舵机放大因子
 
     void set_servo_out(float _movement_throttle, float _movement_roll, float _movement_yaw, float _movement_pitch, float _movement_propeller_angle) override 
     {
@@ -76,6 +77,7 @@ protected:
     virtual void _output_test_seq(uint8_t motor_seq, int16_t pwm) override;
 
     int now_mode;
+    float Trans_servo_k; //跨介质舵机放大因子
     float underwater_throttle;
     float underwater_roll;
     float underwater_yaw;
