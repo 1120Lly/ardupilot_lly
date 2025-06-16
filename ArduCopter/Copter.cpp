@@ -835,6 +835,7 @@ void Copter::update_UnderwaterControl()
     float U_T_ratio = g2.U_T_ratio;
     float U_JM_k = g2.U_JM_k;
     underwaterControl->update(U_T_ratio, U_JM_k);
+    Log_underwater_control();
 }
 
 /*

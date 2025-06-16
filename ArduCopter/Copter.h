@@ -234,6 +234,7 @@ public:
     friend class PayloadPlace;
 
     Copter(void);
+    void Log_underwater_control();
 
 private:
 

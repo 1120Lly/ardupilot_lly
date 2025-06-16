@@ -88,6 +88,35 @@ void Copter::Log_Write_PIDS()
     }
 }
 
+//user define
+struct PACKED log_underwater_control
+{
+    LOG_PACKET_HEADER;
+    uint64_t   time_us;
+    int16_t    underwater_des_Rol;
+    int16_t    underwater_des_Pit;
+    int16_t    underwater_des_Yaw;
+    float      underwater_Rol;
+    float      underwater_Pit;
+    float      underwater_Yaw;
+};
+
+void Copter::Log_underwater_control()
+{
+    struct log_underwater_control pkt = {
+        LOG_PACKET_HEADER_INIT(LOG_UNDERWATER_CONTROL_MSG),
+        time_us             : AP_HAL::micros64(),
+        underwater_des_Rol  : underwaterControl->_movement_roll,
+        underwater_des_Pit  : underwaterControl->_movement_yaw,
+        underwater_des_Yaw  : underwaterControl->_movement_pitch,
+        underwater_Rol      : underwaterControl->_movement_roll_out,
+        underwater_Pit      : underwaterControl->_movement_yaw_out,
+        underwater_Yaw      : underwaterControl->_movement_pitch_out
+    };
+    logger.WriteCriticalBlock(&pkt, sizeof(pkt));
+}
+
+
 // Write an EKF and POS packet
 void Copter::Log_Write_EKF_POS()
 {
@@ -423,6 +452,10 @@ const struct LogStructure Copter::log_structure[] = {
     { LOG_PARAMTUNE_MSG, sizeof(log_ParameterTuning),
       "PTUN", "QBfff",         "TimeUS,Param,TunVal,TunMin,TunMax", "s----", "F----" },
 
+
+//user defined
+    { LOG_UNDERWATER_CONTROL_MSG, sizeof(log_underwater_control),
+      "UW", "Qhhhfff",         "TimeUS,desRol,desPit,desYaw,Rol,Pit,Yaw", "s----", "F----" },
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
 // @Field: TimeUS: Time since system startup

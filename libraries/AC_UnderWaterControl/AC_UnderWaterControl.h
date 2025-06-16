@@ -22,6 +22,14 @@
 #define AC_underwater_ROLL_I            0.0f
 #define AC_underwater_ROLL_D            0.1f
 
+#define AC_underwater_Pit_P            0.3f
+#define AC_underwater_Pit_I            0.0f
+#define AC_underwater_Pit_D            0.1f
+
+#define AC_underwater_Yaw_P            0.3f
+#define AC_underwater_Yaw_I            0.0f
+#define AC_underwater_Yaw_D            0.1f
+
 
 class AC_UnderWaterControl {
 public:
@@ -44,6 +52,8 @@ public:
     void propeller_servo_motor_plus();
     void propeller_servo_motor_cut();
     float Roll_control(float roll, float gyro_z);
+    float Pitch_control(float pitch, float gyro_x);
+    float Yaw_control(float yaw, float gyro_y);
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -66,20 +76,21 @@ public:
     // bool Pick_Up(float Acceleration, float Angle, int16_t encoder_left, int16_t encoder_right);
     // bool Put_Down(float Angle, int encoder_left, int encoder_right);
     // void debug_info();
-
-
-protected:
-
-    LowPassFilterFloat speed_low_pass_filter;//一阶低通滤波器
-
-
-    ///////////////////////////////////////////////////////
     int16_t _movement_throttle;
     int16_t _movement_roll;
     int16_t _movement_yaw;
     int16_t _movement_pitch;
     int16_t _movement_propeller_angle;
     float _movement_roll_out; //PD控制器输出值
+    float _movement_pitch_out; //PD控制器输出值
+    float _movement_yaw_out; //PD控制器输出值
+
+
+protected:
+
+    LowPassFilterFloat speed_low_pass_filter;//一阶低通滤波器
+    LowPassFilterFloat angle_low_pass_filter;//一阶低通滤波器
+
 
     bool mode_underwater;
     bool mode_transwater;
@@ -98,9 +109,13 @@ protected:
     //////////////////////////////////////////
     //PID参数 
     AC_PID _pid_roll;
+    AC_PID _pid_yaw;
+    AC_PID _pid_pitch;
 
     /////////////////////////////////////////////
     //水下滚转环参数
     float turn_target;
     float turn_out;
+
+    float _dt;
 };

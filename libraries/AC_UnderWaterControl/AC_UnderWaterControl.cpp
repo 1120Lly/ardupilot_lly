@@ -13,17 +13,26 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo AC_UnderWaterControl::var_info[]={
     AP_SUBGROUPINFO(_pid_roll, "ROL_", 1, AC_UnderWaterControl, AC_PID),
 
-    AP_GROUPINFO("SVO_K", 2, AC_UnderWaterControl, transwater_servo_out_K, 1),
+    AP_SUBGROUPINFO(_pid_yaw, "PIT_", 2, AC_UnderWaterControl, AC_PID),
+
+    AP_SUBGROUPINFO(_pid_pitch, "YAW_", 3, AC_UnderWaterControl, AC_PID),
+
+    AP_GROUPINFO("SVO_K", 4, AC_UnderWaterControl, transwater_servo_out_K, 1),
 
     AP_GROUPEND
 };
 
 AC_UnderWaterControl::AC_UnderWaterControl(AP_Motors* motors , AP_AHRS_View* ahrs)
-    :_pid_roll(AC_underwater_ROLL_P, 0, AC_underwater_ROLL_D, 0, 0, 0, 0, 0)
+    :_pid_roll(AC_underwater_ROLL_P, 0, AC_underwater_ROLL_D, 0, 0, 0, 0, 0),
+    _pid_pitch(AC_underwater_Pit_P, 0, AC_underwater_Pit_D, 0, 0, 0, 0, 0),
+    _pid_yaw(AC_underwater_Yaw_P, 0, AC_underwater_Yaw_D, 0, 0, 0, 0, 0)
 {
+    _dt = 200;
     AP_Param::setup_object_defaults(this, var_info);
     speed_low_pass_filter.set_cutoff_frequency(50.0f);
     speed_low_pass_filter.reset(0);
+    angle_low_pass_filter.set_cutoff_frequency(0.1f);
+    angle_low_pass_filter.reset(0);
     _movement_throttle = 0;
     _movement_roll = 0;
     _movement_yaw = 0;
@@ -70,6 +79,7 @@ void AC_UnderWaterControl::propeller_servo_motor_cut()
  * 函数：水下滚转控制
  * 入口参数：滚转目标角速度、陀螺仪z轴角速度
  * 返回值：转向控制pwm(-500~500)
+ * 坐标系为自定义坐标系
  * **********************************************************************************************/
 float AC_UnderWaterControl::Roll_control(float roll, float gyro_z)
 {
@@ -78,6 +88,31 @@ float AC_UnderWaterControl::Roll_control(float roll, float gyro_z)
     return roll_out;
 }
 
+/************************************************************************************************
+ * 函数：水下俯仰控制
+ * 入口参数：俯仰目标角速度、陀螺仪y轴角速度
+ * 返回值：转向控制pwm(-500~500)
+ * **********************************************************************************************/
+float AC_UnderWaterControl::Pitch_control(float Pit, float gyro_y)
+{
+    float gyro_y_filter = angle_low_pass_filter.apply(gyro_y, _dt);
+    float Pit_out = (float)Pit * _pid_pitch.kP() - gyro_y_filter * _pid_pitch.kD();
+
+    return Pit_out;
+}
+
+/************************************************************************************************
+ * 函数：水下偏航控制
+ * 入口参数：偏航目标角速度、陀螺仪x轴角速度
+ * 返回值：转向控制pwm(-500~500)
+ * **********************************************************************************************/
+float AC_UnderWaterControl::Yaw_control(float Yaw, float gyro_x)
+{
+    float gyro_x_filter = speed_low_pass_filter.apply(gyro_x, _dt);
+    float Yaw_out = (float)Yaw * _pid_yaw.kP() - gyro_x_filter * _pid_yaw.kD();
+
+    return Yaw_out;
+}
 
 void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
 {
@@ -126,6 +161,8 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
 /////////////////////////////////////////////////////////////////////////////////////////////////
     //获得陀螺仪参数
     float gyro_z = _ahrs->get_gyro_latest()[2];
+    float gyro_x = _ahrs->get_gyro_latest()[0];
+    float gyro_y = _ahrs->get_gyro_latest()[1]; //坐标系为ardupilot自带坐标系
 
     //获得当前模式
     get_mode();
@@ -133,7 +170,9 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     // 遥控输入
     pilot_control();
 
-    _movement_roll_out = Roll_control(_movement_roll, gyro_z);
+    _movement_roll_out = Roll_control(_movement_roll, gyro_x);
+    _movement_yaw_out = Pitch_control(_movement_yaw, gyro_y);
+    _movement_pitch_out = Yaw_control(_movement_pitch, gyro_z);
 
     //返回倾转螺旋桨舵机转角值pwm_propeller_angle_now
     if(pwm_propeller_angle_now < _movement_propeller_angle)
@@ -230,7 +269,7 @@ void AC_UnderWaterControl::set_servo_out()
     float movement_throttle;
     float movement_roll = float(_movement_roll_out)/1000.0f;
     float movement_yaw;
-    float movement_pitch = float(_movement_pitch)/1000.0f;
+    float movement_pitch = float(_movement_pitch_out)/1000.0f;
     float movement_propeller_angle = float(pwm_propeller_angle_now - 1500)/1000.0f;
 
     if(_movement_throttle >= 1200)
@@ -241,7 +280,7 @@ void AC_UnderWaterControl::set_servo_out()
         movement_throttle = 0.0f;
     }
 
-    movement_yaw = float(_movement_yaw)/1000.0f;
+    movement_yaw = float(_movement_yaw_out)/1000.0f;
 
     _motors->set_servo_out(movement_throttle, movement_roll, movement_yaw, movement_pitch, movement_propeller_angle);
 }
