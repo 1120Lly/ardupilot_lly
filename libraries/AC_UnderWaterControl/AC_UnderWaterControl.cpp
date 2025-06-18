@@ -160,9 +160,9 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////
     //获得陀螺仪参数
-    float gyro_z = _ahrs->get_gyro_latest()[2];
-    float gyro_x = _ahrs->get_gyro_latest()[0];
-    float gyro_y = _ahrs->get_gyro_latest()[1]; //坐标系为ardupilot自带坐标系
+    _gyro_z = _ahrs->get_gyro_latest()[2];
+    _gyro_x = _ahrs->get_gyro_latest()[0];
+    _gyro_y = _ahrs->get_gyro_latest()[1]; //坐标系为ardupilot自带坐标系
 
     //获得当前模式
     get_mode();
@@ -170,9 +170,9 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     // 遥控输入
     pilot_control();
 
-    _movement_roll_out = Roll_control(_movement_roll, gyro_x);
-    _movement_yaw_out = Pitch_control(_movement_yaw, gyro_y);
-    _movement_pitch_out = Yaw_control(_movement_pitch, gyro_z);
+    _movement_roll_out = Roll_control(_movement_roll, _gyro_x);
+    _movement_yaw_out = Pitch_control(_movement_yaw, _gyro_y);
+    _movement_pitch_out = Yaw_control(_movement_pitch, _gyro_z);
 
     //返回倾转螺旋桨舵机转角值pwm_propeller_angle_now
     if(pwm_propeller_angle_now < _movement_propeller_angle)
@@ -189,6 +189,8 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     
     //发送遥控输出
     set_servo_out();
+
+    get_to_zero();
 
 }
 
@@ -283,6 +285,20 @@ void AC_UnderWaterControl::set_servo_out()
     movement_yaw = float(_movement_yaw_out)/1000.0f;
 
     _motors->set_servo_out(movement_throttle, movement_roll, movement_yaw, movement_pitch, movement_propeller_angle);
+}
+
+void AC_UnderWaterControl::get_to_zero()
+{
+    if(UnderWaterMode != UnderWaterMode::underwater)
+    {
+    _movement_roll = 0;
+    _movement_yaw = 0;
+    _movement_pitch = 0;
+    _movement_roll_out = 0;
+    _movement_yaw_out = 0;
+    _movement_pitch_out = 0;
+    }
+
 }
 
 // void AC_BalanceControl::debug_info()

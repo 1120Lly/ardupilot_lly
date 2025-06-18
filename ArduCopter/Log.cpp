@@ -99,6 +99,9 @@ struct PACKED log_underwater_control
     float      underwater_Rol;
     float      underwater_Pit;
     float      underwater_Yaw;
+    float      underwater_Rol_d; //陀螺仪x轴角速度
+    float      underwater_Pit_d; //陀螺仪y轴角速度
+    float      underwater_Yaw_d; //陀螺仪z轴角速度
 };
 
 void Copter::Log_underwater_control()
@@ -111,7 +114,10 @@ void Copter::Log_underwater_control()
         underwater_des_Yaw  : underwaterControl->_movement_pitch,
         underwater_Rol      : underwaterControl->_movement_roll_out,
         underwater_Pit      : underwaterControl->_movement_yaw_out,
-        underwater_Yaw      : underwaterControl->_movement_pitch_out
+        underwater_Yaw      : underwaterControl->_movement_pitch_out,
+        underwater_Rol_d    :underwaterControl->_gyro_z, //陀螺仪z轴角速度
+        underwater_Pit_d    :underwaterControl->_gyro_y, //陀螺仪y轴角速度
+        underwater_Yaw_d    :underwaterControl->_gyro_x  //陀螺仪x轴角速度
     };
     logger.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
@@ -455,7 +461,7 @@ const struct LogStructure Copter::log_structure[] = {
 
 //user defined
     { LOG_UNDERWATER_CONTROL_MSG, sizeof(log_underwater_control),
-      "UW", "Qhhhfff",         "TimeUS,desRol,desPit,desYaw,Rol,Pit,Yaw", "s----", "F----" },
+      "UW", "Qhhhffffff",         "TimeUS,desRol,desPit,desYaw,Rol,Pit,Yaw,Rol_d,Pit_d,Yaw_d", "s----", "F----" },
 // @LoggerMessage: CTUN
 // @Description: Control Tuning information
 // @Field: TimeUS: Time since system startup

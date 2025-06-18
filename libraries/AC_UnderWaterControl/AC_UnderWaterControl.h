@@ -54,6 +54,7 @@ public:
     float Roll_control(float roll, float gyro_z);
     float Pitch_control(float pitch, float gyro_x);
     float Yaw_control(float yaw, float gyro_y);
+    void get_to_zero();
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -84,6 +85,9 @@ public:
     float _movement_roll_out; //PD控制器输出值
     float _movement_pitch_out; //PD控制器输出值
     float _movement_yaw_out; //PD控制器输出值
+    float _gyro_x; //陀螺仪x轴角速度
+    float _gyro_y; //陀螺仪y轴角速度
+    float _gyro_z; //陀螺仪z轴角速度
 
 
 protected:
