@@ -75,6 +75,18 @@ void AC_UnderWaterControl::propeller_servo_motor_cut()
     // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
 }
 
+void AC_UnderWaterControl::virtual_propeller_servo_motor_plus()
+{
+    virtual_propeller_angle_out += U_JM_k;
+    // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
+}
+
+void AC_UnderWaterControl::virtual_propeller_servo_motor_cut()
+{
+    virtual_propeller_angle_out -= U_JM_k;
+    // gcs().send_text(MAV_SEVERITY_INFO, "当前角度=%d", pwm_propeller_angle_now);
+}
+
 /************************************************************************************************
  * 函数：水下滚转控制
  * 入口参数：滚转目标角速度、陀螺仪z轴角速度
@@ -114,6 +126,42 @@ float AC_UnderWaterControl::Yaw_control(float Yaw, float gyro_x)
     return Yaw_out;
 }
 
+/************************************************************************************************
+ * 函数：得到机体系速度速度
+ * 入口参数：无
+ * 返回值：无
+ * **********************************************************************************************/
+void AC_UnderWaterControl::get_Vbody()
+{
+    Vector3f Vground, Vbody;
+    Matrix3f rot_ned_to_body = _ahrs->get_rotation_body_to_ned(); //将北东地坐标系转换为机体系坐标系
+    if(_ahrs -> get_velocity_NED(Vground))
+    {
+        Vbody = rot_ned_to_body.transposed() * Vground; //将北东地速度转换为机体系速度
+        _gyro_Vx = Vbody.x; //机体系x轴速度
+        _gyro_Vy = Vbody.y; //机体系y轴速度
+        _gyro_Vz = Vbody.z; //机体系z轴速度
+    }
+    else
+    {
+        gcs().send_text(MAV_SEVERITY_WARNING, "get_NorthEast_Velocity failed");
+        _gyro_Vx = 0;
+        _gyro_Vy = 0;
+        _gyro_Vz = 0;
+    }
+}
+
+/************************************************************************************************
+ * 函数：得到螺旋桨折叠角度
+ * 入口参数：无
+ * 返回值：无
+ * **********************************************************************************************/
+void AC_UnderWaterControl::get_virtual_propeller_angle()
+{
+    virtual_propeller_angle = _gyro_Vx * 2;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
 void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
 {
     if (_motors == nullptr) {
@@ -131,32 +179,45 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     U_JM_k = U_JM_K;  //倾转螺旋桨舵机随时间变化的斜率
 
     pwm_read = hal.rcin->read(CH_6);
+    pwm_throttle = hal.rcin->read(CH_3);
 /////////////////////////////////////////////////////////////////////////////////////////
 //设置模式
 //////////////////////////////////////////////////////////////////////////////////////////
     if (pwm_read > telecontorl_low_position_min && pwm_read < telecontorl_low_position_max) 
     {
-        mode_fly = true;
-        mode_transwater = false;
-        mode_underwater = false;
-        UnderWaterMode = UnderWaterMode::fly;
+        if(pwm_throttle < 1850)
+        {
+            mode_fly = true;
+            mode_transwater = false;
+            mode_underwater = false;
+            UnderWaterMode = UnderWaterMode::fly;
+            gcs().send_text(MAV_SEVERITY_INFO,"飞行模式");
+        }
+        else 
+        {
+            mode_fly = false;
+            mode_transwater = true;
+            mode_underwater = false;
+            UnderWaterMode = UnderWaterMode::transwater;
+            gcs().send_text(MAV_SEVERITY_INFO,"穿越模式");            
+        }
         // gcs().send_text(MAV_SEVERITY_INFO,"飞行模式");
     } 
-    else if (pwm_read > telecontorl_mid_position_min && pwm_read < telecontorl_mid_position_max)
-    {
-        mode_fly = false;
-        mode_transwater = true;
-        mode_underwater = false;
-        UnderWaterMode = UnderWaterMode::transwater;
-        // gcs().send_text(MAV_SEVERITY_INFO,"穿越模式");
-    }
+    // else if (pwm_read > telecontorl_mid_position_min && pwm_read < telecontorl_mid_position_max)
+    // {
+    //     mode_fly = false;
+    //     mode_transwater = true;
+    //     mode_underwater = false;
+    //     UnderWaterMode = UnderWaterMode::transwater;
+    //     // gcs().send_text(MAV_SEVERITY_INFO,"穿越模式");
+    // }
     else if (pwm_read > telecontorl_high_position_min && pwm_read < telecontorl_high_position_max)
     {
         mode_fly = false;
         mode_transwater = false;
         mode_underwater = true;
         UnderWaterMode = UnderWaterMode::underwater;
-        // gcs().send_text(MAV_SEVERITY_INFO,"水下模式");
+        gcs().send_text(MAV_SEVERITY_INFO,"水下模式");
     }
 /////////////////////////////////////////////////////////////////////////////////////////////////
     //获得陀螺仪参数
@@ -183,6 +244,14 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
     {
         propeller_servo_motor_cut();
     }
+    if(virtual_propeller_angle_out < virtual_propeller_angle)
+    {
+        virtual_propeller_servo_motor_plus();
+    }
+    else if(virtual_propeller_angle_out > virtual_propeller_angle)
+    {
+        virtual_propeller_servo_motor_cut();
+    }
 
     //发送跨介质舵机放大因子
     get_K();
@@ -198,7 +267,6 @@ void AC_UnderWaterControl::update(float U_T_ratio, float U_JM_K)
 
 void AC_UnderWaterControl::pilot_control()
 {
-    int16_t pwm_throttle = hal.rcin->read(CH_3);
     int16_t pwm_roll = hal.rcin->read(CH_1) - 1500;
     int16_t pwm_yaw = hal.rcin->read(CH_2) - 1500;
     int16_t pwm_pitch = hal.rcin->read(CH_4) - 1500;
@@ -297,6 +365,8 @@ void AC_UnderWaterControl::get_to_zero()
     _movement_roll_out = 0;
     _movement_yaw_out = 0;
     _movement_pitch_out = 0;
+    virtual_propeller_angle = 0;
+    virtual_propeller_angle_out = 0;
     }
 
 }

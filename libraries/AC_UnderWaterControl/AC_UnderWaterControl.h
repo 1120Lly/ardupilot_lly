@@ -16,7 +16,7 @@
 #define telecontorl_mid_position_min    1400
 #define telecontorl_mid_position_max    1600
 #define telecontorl_low_position_min    1000
-#define telecontorl_low_position_max    1200
+#define telecontorl_low_position_max    1600
 
 #define AC_underwater_ROLL_P            0.3f
 #define AC_underwater_ROLL_I            0.0f
@@ -55,6 +55,9 @@ public:
     float Pitch_control(float pitch, float gyro_x);
     float Yaw_control(float yaw, float gyro_y);
     void get_to_zero();
+    void virtual_propeller_servo_motor_plus();
+    void virtual_propeller_servo_motor_cut();
+    void get_virtual_propeller_angle();
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -88,6 +91,11 @@ public:
     float _gyro_x; //陀螺仪x轴角速度
     float _gyro_y; //陀螺仪y轴角速度
     float _gyro_z; //陀螺仪z轴角速度
+    float _gyro_Vx; //陀螺仪x轴速度
+    float _gyro_Vy; //陀螺仪y轴速度
+    float _gyro_Vz; //陀螺仪z轴速度
+    float virtual_propeller_angle; //虚拟螺旋桨角度
+    float virtual_propeller_angle_out; //虚拟螺旋桨角度输出值
 
 
 protected:
@@ -122,4 +130,6 @@ protected:
     float turn_out;
 
     float _dt;
+    void get_Vbody();
+    int16_t pwm_throttle; //油门
 };
